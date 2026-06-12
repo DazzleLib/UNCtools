@@ -20,8 +20,7 @@ On Windows, the same file often has two names: the UNC form (`\\server\share\fol
 ## Quick Start
 
 ```bash
-pip install unctools          # or equivalently:
-pip install dazzle-unctools   # alias under the DazzleLib org's uniform naming
+pip install unctools          # or equivalently: dazzle-unctools
 ```
 
 ```python
@@ -44,8 +43,8 @@ origin = classify_path_origin(local)                  # -> "network"
 ## Installation
 
 ```bash
-pip install unctools              # standard
-pip install unctools[windows]    # + pywin32 for the rich Windows APIs
+pip install unctools              # standard (or: dazzle-unctools)
+pip install unctools[windows]     # + pywin32 for the rich Windows APIs
 ```
 
 ```bash
