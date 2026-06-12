@@ -53,10 +53,11 @@ def demonstrate_path_conversion():
     print(f"  UNC -> Local: {unc_path} -> {convert_to_local(unc_path)}")
     print(f"  Local -> UNC: {local_path} -> {convert_to_unc(local_path)}")
     
-    # Normalize paths
-    print("\nPath Normalization:")
-    print(f"  Normalize (prefer local): {normalize_path(unc_path, prefer_unc=False)}")
-    print(f"  Normalize (prefer UNC): {normalize_path(local_path, prefer_unc=True)}")
+    # Round-trip explicitly (normalize_path was removed in 0.2.0 -- the
+    # explicit converts ARE the API)
+    print("\nExplicit round-trip:")
+    print(f"  To local: {convert_to_local(unc_path)}")
+    print(f"  To UNC:   {convert_to_unc(local_path)}")
 
 def demonstrate_path_detection():
     """Demonstrate path detection functionality."""
@@ -113,14 +114,11 @@ def demonstrate_file_operations():
     with open(temp_file, "w") as f:
         f.write("Hello, UNCtools!")
     
-    # Safe open
-    print("\nSafe Open:")
-    try:
-        with safe_open(temp_file, "r") as f:
-            content = f.read()
-            print(f"  Content: {content}")
-    except Exception as e:
-        print(f"  Error: {e}")
+    # Identity probes (safe_open was removed in 0.2.0 -- I/O lives in
+    # dazzle-filekit; unctools answers identity questions)
+    print("\nIdentity probes:")
+    print(f"  file_exists: {file_exists(temp_file)}")
+    print(f"  accessible variant: {find_accessible_path(temp_file)}")
     
     # Batch operations
     print("\nBatch Operations:")
