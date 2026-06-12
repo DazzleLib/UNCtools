@@ -319,24 +319,9 @@ def get_mappings() -> Dict[str, str]:
     converter = _get_global_converter()
     return converter.get_mappings()
 
-def normalize_path(path: Union[str, Path], prefer_unc: bool = False) -> Path:
-    """
-    Normalize a path by ensuring consistent format and optionally converting between UNC and local.
-    
-    Args:
-        path: The path to normalize.
-        prefer_unc: If True, convert local paths to UNC if possible. 
-                   If False, convert UNC paths to local if possible.
-                   
-    Returns:
-        The normalized path.
-    """
-    path_obj = Path(str(path).replace('/', '\\'))
-    
-    if prefer_unc:
-        return convert_to_unc(path_obj)
-    else:
-        return convert_to_local(path_obj)
+# normalize_path(prefer_unc=) was REMOVED in 0.2.0 (STACK-MAP D4): the explicit
+# convert_to_local / convert_to_unc ARE the API; a direction-switch wrapper
+# taught nothing and collided with other libraries' normalize_path semantics.
 
 def parse_unc_path(path: Union[str, Path]) -> Optional[Tuple[str, str, str]]:
     """
@@ -376,3 +361,97 @@ def join_unc_path(server: str, share: str, rest: str = "") -> str:
         return f"{chr(92)}{chr(92)}{server}{chr(92)}{share}{chr(92)}{rest.lstrip(chr(92))}"
     else:
         return f"{chr(92)}{chr(92)}{server}{chr(92)}{share}"
+
+
+# ── Moved here from the dissolved operations module (0.2.0, STACK-MAP D7) ──
+# Pure path-identity work: batch conversion and UNC path algebra. NOTE:
+# parse_unc_path/join_unc_path above are near-duplicates of
+# get_unc_path_elements/build_unc_path (these preserve forward slashes in the
+# relative part; those don't) -- consolidation candidate for 0.3.0.
+
+def batch_convert(paths, to_unc: bool = False) -> Dict[str, str]:
+    """
+    Convert a batch of paths between UNC and local formats.
+
+    Args:
+        paths: List of paths to convert.
+        to_unc: If True, convert to UNC paths; if False, convert to local paths.
+
+    Returns:
+        A dictionary mapping original paths to converted paths.
+    """
+    result = {}
+
+    for path in paths:
+        original_path = str(path)
+
+        try:
+            if to_unc:
+                converted_path = str(convert_to_unc(path))
+            else:
+                converted_path = str(convert_to_local(path))
+
+            result[original_path] = converted_path
+        except Exception as e:
+            logger.warning(f"Failed to convert path {original_path}: {e}")
+            result[original_path] = original_path  # Keep original on failure
+
+    return result
+
+def get_unc_path_elements(path: Union[str, Path]) -> Optional[Tuple[str, str, str]]:
+    """
+    Extract server, share, and path components from a UNC path.
+
+    Args:
+        path: The UNC path to analyze.
+
+    Returns:
+        A tuple of (server, share, relative_path) if the path is a valid UNC path,
+        or None if the path is not a UNC path.
+    """
+    original_path_str = str(path)
+    path_str = original_path_str.replace('/', '\\')
+
+    # Check if it's a UNC path
+    if not path_str.startswith('\\\\'):
+        return None
+
+    # Parse the UNC path
+    match = re.match(r'^\\\\([^\\]+)\\([^\\]+)(?:\\(.*))?', path_str)
+    if match:
+        server = match.group(1)
+        share = match.group(2)
+        relative_path = match.group(3) or ""
+
+        # If original path used forward slashes, preserve them in the relative path
+        if '/' in original_path_str:
+            # Replace backslashes with forward slashes in the relative path
+            relative_path = relative_path.replace('\\', '/')
+
+        return (server, share, relative_path)
+    return None
+
+def build_unc_path(server: str, share: str, relative_path: Optional[str] = None) -> str:
+    """
+    Build a UNC path from server, share, and path components.
+
+    Args:
+        server: The server name.
+        share: The share name.
+        relative_path: The relative path within the share (optional).
+
+    Returns:
+        A properly formatted UNC path.
+    """
+    unc_base = f"\\\\{server}\\{share}"
+
+    if not relative_path:
+        return unc_base
+
+    # Ensure relative path doesn't start with a backslash
+    rel_path = relative_path.lstrip('\\').lstrip('/')
+
+    if rel_path:
+        return f"{unc_base}\\{rel_path}"
+    else:
+        return unc_base

@@ -23,7 +23,7 @@ from tests.test_framework import (
 # Import UNCtools
 import unctools
 from unctools.converter import (
-    UNCConverter, convert_to_local, convert_to_unc, normalize_path,
+    UNCConverter, convert_to_local, convert_to_unc,
     parse_unc_path, join_unc_path
 )
 
@@ -155,12 +155,7 @@ def test_module_functions():
     path = convert_to_unc(TEST_LOCAL_PATH)
     assert_is_not_none(path)
     
-    # Test normalize_path
-    path = normalize_path(TEST_UNC_PATH)
-    assert_is_not_none(path)
-    
-    path = normalize_path(TEST_LOCAL_PATH, prefer_unc=True)
-    assert_is_not_none(path)
+    # normalize_path was removed in 0.2.0 (D4) -- the explicit converts ARE the API
 
 def test_parse_unc_path():
     """Test parse_unc_path function."""

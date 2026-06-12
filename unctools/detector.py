@@ -336,9 +336,14 @@ def get_network_target(drive: Union[str, Path, None]) -> Optional[str]:
     # If all else fails, return None
     return None
 
-def get_path_type(path: Union[str, Path]) -> str:
+def classify_path_origin(path: Union[str, Path]) -> str:
     r"""
-    Determine the type of a path.
+    Classify WHERE a path comes from (its identity/origin).
+
+    Renamed from ``get_path_type`` in 0.2.0 (STACK-MAP D4): the old name
+    collided with dazzle-filekit's ``get_path_type`` (which classifies WHAT a
+    filesystem object is). The pair now teaches the layer split: L0 classifies
+    origin, L1 classifies object kind.
 
     Args:
         path: The path to check.
@@ -390,7 +395,7 @@ def detect_path_issues(path: Union[str, Path]) -> List[str]:
     """
     issues = []
     path_str = str(path)
-    path_type = get_path_type(path_str)
+    path_type = classify_path_origin(path_str)
     
     # Check if the path is too long for Windows
     if IS_WINDOWS and len(path_str) > 260 and not path_str.startswith('\\\\?\\'):
@@ -529,3 +534,147 @@ def is_server_in_intranet_zone(server: str) -> bool:
     except Exception as e:
         logger.warning(f"Failed to check if server {server} is in intranet zone: {e}")
         return False
+
+
+# ── 0.2.0 additions (STACK-MAP D4 + D7) ─────────────────────────────────────
+
+def get_path_type(path: Union[str, Path]) -> str:
+    """DEPRECATED shim (alias A4): renamed to :func:`classify_path_origin`.
+
+    Warns and delegates; removal slated for 0.3.0. See docs/api-stability.md.
+    """
+    import warnings
+    warnings.warn(
+        "unctools.get_path_type is deprecated; use classify_path_origin "
+        "(renamed in 0.2.0; this shim is removed in 0.3.0)",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return classify_path_origin(path)
+
+
+# Read-only identity PROBES, moved here from the dissolved operations module
+# (rule 3a: L0 may probe the filesystem to answer identity questions; it may
+# never mutate or transfer content).
+
+def file_exists(file_path: Union[str, Path], check_both_paths: bool = True) -> bool:
+    """
+    Check if a file exists, handling UNC paths and network drives.
+
+    Args:
+        file_path: The path to check.
+        check_both_paths: Whether to check both UNC and local path variants.
+
+    Returns:
+        True if the file exists, False otherwise.
+    """
+    from .converter import convert_to_local, convert_to_unc
+
+    original_path = Path(file_path)
+
+    # First check the original path
+    if os.path.exists(original_path):
+        return True
+
+    # If requested, check the converted path too
+    if check_both_paths:
+        try:
+            if is_unc_path(original_path):
+                # Check local path
+                local_path = convert_to_local(original_path)
+                if local_path != original_path and os.path.exists(local_path):
+                    return True
+            else:
+                # Check UNC path
+                unc_path = convert_to_unc(original_path)
+                if unc_path != original_path and os.path.exists(unc_path):
+                    return True
+        except Exception as e:
+            logger.debug(f"Path conversion during file_exists check failed: {e}")
+
+    return False
+
+
+def is_path_accessible(path: Union[str, Path], check_both_paths: bool = True) -> bool:
+    """
+    Check if a path is accessible for reading.
+
+    Args:
+        path: The path to check.
+        check_both_paths: Whether to check both UNC and local path variants.
+
+    Returns:
+        True if the path is accessible, False otherwise.
+    """
+    from .converter import convert_to_local, convert_to_unc
+
+    # For files, check if they exist and are readable
+    if os.path.isfile(path):
+        try:
+            with open(path, 'r') as f:
+                f.read(1)  # Try to read 1 byte
+            return True
+        except Exception:
+            pass
+
+    # For directories, check if we can list their contents
+    elif os.path.isdir(path):
+        try:
+            os.listdir(path)
+            return True
+        except Exception:
+            pass
+
+    # If the original path isn't accessible and check_both_paths is enabled
+    if check_both_paths:
+        try:
+            # Try the converted path
+            if is_unc_path(str(path)):  # Convert Path to string before checking
+                local_path = convert_to_local(path)
+                if local_path != path:
+                    return is_path_accessible(local_path, check_both_paths=False)
+            else:
+                unc_path = convert_to_unc(path)
+                if unc_path != path:
+                    return is_path_accessible(unc_path, check_both_paths=False)
+        except Exception as e:
+            logger.debug(f"Path conversion during accessibility check failed: {e}")
+
+    return False
+
+
+def find_accessible_path(path: Union[str, Path]) -> Optional[Path]:
+    """
+    Find an accessible variant of a path, trying both UNC and local formats.
+
+    Args:
+        path: The original path to find an accessible variant for.
+
+    Returns:
+        An accessible Path object, or None if no accessible variant is found.
+    """
+    from .converter import convert_to_local, convert_to_unc
+
+    original_path = Path(path)
+
+    # Check the original path first
+    if is_path_accessible(original_path, check_both_paths=False):
+        return original_path
+
+    # Try converted paths
+    try:
+        if is_unc_path(str(original_path)):  # Convert Path to string before checking
+            # Try local path
+            local_path = convert_to_local(original_path)
+            if local_path != original_path and is_path_accessible(local_path, check_both_paths=False):
+                return local_path
+        else:
+            # Try UNC path
+            unc_path = convert_to_unc(original_path)
+            if unc_path != original_path and is_path_accessible(unc_path, check_both_paths=False):
+                return unc_path
+    except Exception as e:
+        logger.debug(f"Path conversion during accessibility check failed: {e}")
+
+    # If we got here, no accessible variant was found
+    return None

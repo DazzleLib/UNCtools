@@ -31,19 +31,28 @@ jobs:
         python -m pip install --upgrade pip
         pip install build twine
 
-    - name: Build package
-      run: |
-        python -m build
+    - name: Build main package (unctools)
+      run: python -m build --outdir dist/main/
 
-    - name: Check package with twine
-      run: |
-        twine check dist/*
+    - name: Build alias package (dazzle-unctools)
+      run: python -m build packages/dazzle-unctools-alias/ --outdir dist/alias/
 
-    - name: Upload artifacts
+    - name: Check packages with twine
+      run: |
+        twine check dist/main/*
+        twine check dist/alias/*
+
+    - name: Upload main artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: dist
-        path: dist/
+        name: dist-main
+        path: dist/main/
+
+    - name: Upload alias artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-alias
+        path: dist/alias/
 
   test-install:
     needs: build
@@ -57,7 +66,7 @@ jobs:
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
-        name: dist
+        name: dist-main
         path: dist/
 
     - name: Set up Python ${{ matrix.python-version }}
@@ -78,10 +87,10 @@ jobs:
     environment: testpypi
 
     steps:
-    - name: Download artifacts
+    - name: Download main artifacts
       uses: actions/download-artifact@v4
       with:
-        name: dist
+        name: dist-main
         path: dist/
 
     - name: Publish to Test PyPI
@@ -92,22 +101,52 @@ jobs:
         skip-existing: true
         verbose: true
 
-  publish-pypi:
+  publish-main:
+    name: Publish unctools
     needs: test-install
     runs-on: ubuntu-latest
     if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.test_pypi == 'false')
-    environment: pypi
+    environment:
+      name: pypi
+      url: https://pypi.org/p/unctools
+
+    permissions:
+      id-token: write
 
     steps:
-    - name: Download artifacts
+    - name: Download main artifacts
       uses: actions/download-artifact@v4
       with:
-        name: dist
+        name: dist-main
         path: dist/
 
-    - name: Publish to PyPI
+    - name: Publish to PyPI (trusted publishing)
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
-        password: ${{ secrets.PYPI_API_TOKEN }}
+        skip-existing: true
+        verbose: true
+
+  publish-alias:
+    name: Publish dazzle-unctools
+    needs: test-install
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.test_pypi == 'false')
+    environment:
+      name: pypi
+      url: https://pypi.org/p/dazzle-unctools
+
+    permissions:
+      id-token: write
+
+    steps:
+    - name: Download alias artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: dist-alias
+        path: dist/
+
+    - name: Publish to PyPI (trusted publishing)
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
         skip-existing: true
         verbose: true

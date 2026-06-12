@@ -1,0 +1,44 @@
+# dazzle-unctools -- ALIAS PACKAGE (STACK-MAP D9a, alias register A5).
+#
+# Mirrors the proven dazzlecmd/dazzle-dz pattern (verified 2026-06-12: a clean
+# `pip install dazzle-dz` pulls the latest real dist via the `>=` floor, even
+# when the alias version lags). Installing this installs `unctools` (the real
+# package); the import name is `unctools`. Permanent by design (Rule 6
+# codeless-pointer carve-out). If the library is ever truly renamed, that
+# rename ships as this dist's 1.0.
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dazzle-unctools"
+version = "0.2.0"
+description = "Alias for unctools -- the DazzleLib L0 path-identity library (UNC paths, network drives, origin classification). Import name: unctools."
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.6"
+authors = [
+    {name = "Dustin", email = "6962246+djdarcy@users.noreply.github.com"},
+]
+keywords = ["dazzlelib", "unctools", "unc", "alias", "pointer-package"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+]
+
+dependencies = [
+    "unctools>=0.2.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/DazzleLib/UNCtools"
+Repository = "https://github.com/DazzleLib/UNCtools"
+Issues = "https://github.com/DazzleLib/UNCtools/issues"
+"Architecture Contract" = "https://github.com/DazzleLib/.github/blob/main/docs/STACK-MAP.md"
+
+[tool.setuptools.packages.find]
+where = ["src"]

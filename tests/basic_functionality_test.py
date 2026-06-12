@@ -62,9 +62,9 @@ def run_tests():
     print("\nTesting core module imports...")
     try:
         from unctools import (
-            convert_to_local, convert_to_unc, normalize_path,
+            convert_to_local, convert_to_unc, classify_path_origin,
             is_unc_path, is_network_drive, is_subst_drive,
-            safe_open, batch_convert
+            file_exists, batch_convert
         )
         check(True, "Import core functions")
     except ImportError as e:
@@ -111,12 +111,12 @@ def run_tests():
     test_unc_path = r"\\server\share\folder"
     check(is_unc_path(test_unc_path), f"is_unc_path({test_unc_path}) should be True")
     
-    # Test path normalization
+    # Test origin classification (normalize_path removed in 0.2.0, D4)
     try:
-        normalized = normalize_path(test_path)
-        check(True, f"normalize_path({test_path}) => {normalized}")
+        origin = classify_path_origin(test_path)
+        check(True, f"classify_path_origin({test_path}) => {origin}")
     except Exception as e:
-        check(False, f"normalize_path({test_path}): {e}")
+        check(False, f"classify_path_origin({test_path}): {e}")
     
     # Test path conversion (just ensure it doesn't error)
     try:
@@ -157,10 +157,8 @@ def run_tests():
             temp_filename = f.name
             f.write("UNCtools test file")
         
-        # Test safe_open
-        with safe_open(temp_filename, 'r') as f:
-            content = f.read()
-            check(content == "UNCtools test file", f"safe_open() and read content: '{content}'")
+        # Test file_exists probe (safe_open removed in 0.2.0, D7)
+        check(file_exists(temp_filename), f"file_exists({temp_filename}) should be True")
         
         # Clean up
         os.unlink(temp_filename)

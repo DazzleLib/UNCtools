@@ -10,7 +10,7 @@ from pathlib import Path
 from unittest import mock
 
 from unctools.converter import (
-    UNCConverter, convert_to_local, convert_to_unc, normalize_path,
+    UNCConverter, convert_to_local, convert_to_unc,
     parse_unc_path, join_unc_path
 )
 
@@ -179,24 +179,6 @@ class TestModuleFunctions:
             result = convert_to_unc(TEST_LOCAL_PATH)
             assert result == Path(TEST_UNC_PATH)
             mock_converter.convert_to_unc.assert_called_once_with(TEST_LOCAL_PATH)
-    
-    def test_normalize_path(self):
-        """Test normalize_path function."""
-        # Test with prefer_unc=False (default)
-        with mock.patch('unctools.converter.convert_to_local') as mock_convert_local:
-            mock_convert_local.return_value = Path(TEST_LOCAL_PATH)
-            
-            result = normalize_path(TEST_UNC_PATH)
-            assert result == Path(TEST_LOCAL_PATH)
-            mock_convert_local.assert_called_once_with(Path(TEST_UNC_PATH))
-        
-        # Test with prefer_unc=True
-        with mock.patch('unctools.converter.convert_to_unc') as mock_convert_unc:
-            mock_convert_unc.return_value = Path(TEST_UNC_PATH)
-            
-            result = normalize_path(TEST_LOCAL_PATH, prefer_unc=True)
-            assert result == Path(TEST_UNC_PATH)
-            mock_convert_unc.assert_called_once_with(Path(TEST_LOCAL_PATH))
     
     def test_parse_unc_path(self):
         """Test parse_unc_path function."""
