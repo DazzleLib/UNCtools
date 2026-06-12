@@ -17,9 +17,9 @@ logging.basicConfig(level=logging.INFO,
 # Import UNCtools
 import unctools
 from unctools import (
-    convert_to_local, convert_to_unc, normalize_path,
-    is_unc_path, is_network_drive, is_subst_drive, get_path_type,
-    safe_open, safe_copy, batch_convert, process_files
+    convert_to_local, convert_to_unc,
+    is_unc_path, is_network_drive, is_subst_drive, classify_path_origin,
+    file_exists, find_accessible_path, batch_convert
 )
 
 def print_section(title):
@@ -43,7 +43,8 @@ def demonstrate_path_conversion():
     # Show network mappings if on Windows
     if os.name == 'nt':
         print("\nNetwork Mappings:")
-        mappings = unctools.get_mappings()
+        from unctools.converter import get_mappings
+        mappings = get_mappings()
         for unc, drive in mappings.items():
             print(f"  {unc} -> {drive}")
     
@@ -72,7 +73,7 @@ def demonstrate_path_detection():
     
     print("Path Type Detection:")
     for path in paths:
-        path_type = get_path_type(path)
+        path_type = classify_path_origin(path)
         is_unc = is_unc_path(path)
         print(f"  {path}:")
         print(f"    Type: {path_type}")
@@ -128,15 +129,6 @@ def demonstrate_file_operations():
     for i in range(3):
         with open(os.path.join(temp_dir, f"temp_file_{i}.txt"), "w") as f:
             f.write(f"Test file {i}")
-    
-    # Process files
-    print("  Processing files:")
-    def process_callback(path):
-        return path.stat().st_size
-    
-    results = process_files(temp_dir, process_callback, pattern="temp_file*.txt")
-    for path, size in results.items():
-        print(f"    {path}: {size} bytes")
     
     # Batch convert
     print("\n  Batch conversion:")
