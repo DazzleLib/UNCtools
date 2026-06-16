@@ -1,10 +1,11 @@
-<<<<<<< HEAD
-=======
-# Enhanced .gitignore for RepoKit Projects
-# This template provides comprehensive exclusions for various languages and tools
+# .gitignore for UNCtools (RepoKit-based)
+#
+# Resolved from an old, never-resolved `git merge origin/dev` (introduced in
+# commit f075dd2) that committed five unresolved conflict regions. This is the
+# deduplicated union of both sides -- no patterns dropped.
 
 #######################
-# Common ignored files #
+# OS / editor junk     #
 #######################
 .DS_Store
 Thumbs.db
@@ -13,17 +14,18 @@ desktop.ini
 *.tmp
 *.bak
 *.swp
+*.swo
 *~
 *.*~
 
 #######################
-# Project Directories #
+# Private / RepoKit    #
 #######################
-
 # RepoKit standard private directories
 /private/
 /convos/
 /logs/
+/log/
 /credentials/
 /secrets/
 **/__private__*
@@ -34,15 +36,12 @@ local/
 .dev/
 
 #######################
-# Python              #
+# Python               #
 #######################
-
->>>>>>> origin/dev
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-<<<<<<< HEAD
 
 # C extensions
 *.so
@@ -52,15 +51,6 @@ __pycache__/
 build/
 develop-eggs/
 dist/
-=======
-*.so
-.Python
-
-# Distribution / packaging
-dist/
-build/
-develop-eggs/
->>>>>>> origin/dev
 downloads/
 eggs/
 .eggs/
@@ -70,16 +60,12 @@ parts/
 sdist/
 var/
 wheels/
-<<<<<<< HEAD
-=======
 share/python-wheels/
->>>>>>> origin/dev
 *.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
 
-<<<<<<< HEAD
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
@@ -90,14 +76,6 @@ MANIFEST
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-=======
 # Virtual environments
 venv/
 env/
@@ -108,35 +86,35 @@ env.bak/
 venv.bak/
 pythonenv*
 
-# Testing / coverage
+# Unit test / coverage reports
+htmlcov/
+cover/
 .tox/
+.nox/
 .coverage
 .coverage.*
-.cache/
->>>>>>> origin/dev
+.cache
 nosetests.xml
 coverage.xml
 *.cover
 *.py,cover
 .hypothesis/
 .pytest_cache/
-<<<<<<< HEAD
 
 # Translations
 *.mo
 *.pot
 
-# Django stuff:
-*.log
+# Django
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
-# Flask stuff:
+# Flask
 instance/
 .webassets-cache
 
-# Scrapy stuff:
+# Scrapy
 .scrapy
 
 # Sphinx documentation
@@ -155,31 +133,18 @@ ipython_config.py
 # pyenv
 .python-version
 
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
+# pipenv (lock file is kept in VCS per pypa/pipenv#598)
 #Pipfile.lock
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow
+# PEP 582
 __pypackages__/
 
-# Celery stuff
+# Celery
 celerybeat-schedule
 celerybeat.pid
 
-# SageMath parsed files
+# SageMath
 *.sage.py
-
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
 
 # Spyder project settings
 .spyderproject
@@ -199,34 +164,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# IDE specific files
-.idea/
-*.swp
-*.swo
-
-# OS specific files
-.DS_Store
-Thumbs.db
-
-# UNCtools specific
-*.dazzlelink
-*.temp_rename
-logs/
-
-# RepoKit Private Content (DO NOT REMOVE)
-CLAUDE.md
-private/claude/
-private/docs/
-private/notes/
-private/temp/
-=======
-cover/
-htmlcov/
-
 #######################
-# IDEs and Editors    #
+# IDEs and Editors     #
 #######################
-
 # Visual Studio Code
 .vscode/*
 !.vscode/settings.json
@@ -244,49 +184,40 @@ htmlcov/
 .idea_modules/
 out/
 
-# Environment files
+#######################
+# Security & Secrets   #
+#######################
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-
-#######################
-# Security & Secrets  #
-#######################
-
-# Token and credential files
+.env.private
+.secret
 *token*
 *credential*
 *secret*
 *password*
-.env
-.secret
 credentials.json
 *auth*.json
 *config*.json
 
-# Project-specific directories
-/log/
-/logs/
-/private/
-/convos/
+#######################
+# UNCtools specific    #
+#######################
+*.dazzlelink
+*.temp_rename
+logs/
+test-runs/
+test_runs/
+revisions/
 
 #######################
-# Project Specific    #
-#######################
-
-# Add custom patterns below
-
 # RepoKit Private Content Protection (DO NOT REMOVE)
+#######################
 CLAUDE.md
 **/private_*
-.env.private
-test-runs/
-private/docs/
-private/temp/
-private/notes/
-revisions/
-test_runs/
 private/claude/
->>>>>>> origin/dev
+private/docs/
+private/notes/
+private/temp/

@@ -12,6 +12,17 @@ mutates or transfers content.
 
 ## [Unreleased]
 
+## [0.2.1] -- 2026-06-16
+
+### Changed
+- Build: adopted the `git-repokit-common` subtree (`scripts/repokit-common/`) and its `_version.py` autobump versioning scheme -- the installed git hooks now auto-stamp build metadata on commit (resolves the git-hooks porting tracked in #1).
+
+### Fixed
+- Resolved 5 stale merge-conflict regions left in `.gitignore` by an old `origin/dev` merge; merged both sides as a deduplicated union, no ignore patterns dropped.
+
+### Documentation
+- Documented git-hook installation in CONTRIBUTING.md.
+
 ## [0.2.0] -- 2026-06-11
 
 The probe-not-mutate release (stack phase P1, [#3](https://github.com/DazzleLib/UNCtools/issues/3)).
@@ -54,5 +65,6 @@ pointer dist makes the library discoverable under the org's uniform naming.
   machine-checked; changes follow the deprecation policy, never silent.
 - This CHANGELOG.
 
-[Unreleased]: https://github.com/DazzleLib/UNCtools/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/DazzleLib/UNCtools/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/DazzleLib/UNCtools/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/DazzleLib/UNCtools/releases/tag/v0.2.0

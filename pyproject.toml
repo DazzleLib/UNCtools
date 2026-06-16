@@ -63,7 +63,11 @@ include = ["unctools*"]
 exclude = ["tests*"]
 
 [tool.setuptools.dynamic]
-version = {attr = "unctools.__version__"}
+version = {attr = "unctools._version.PIP_VERSION"}
+
+[tool.repokit-common]
+version-source = "unctools/_version.py"
+repo-url = "https://github.com/DazzleLib/UNCtools"
 
 [tool.setuptools.package-data]
 unctools = ["py.typed"]

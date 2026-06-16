@@ -32,7 +32,7 @@ Advanced Windows functionality:
     mappings = get_network_mappings()
 """
 
-__version__ = "0.2.0"
+from ._version import __version__
 
 import os
 import sys

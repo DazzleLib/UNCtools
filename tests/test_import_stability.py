@@ -92,6 +92,19 @@ def test_operations_facade_warns_on_import():
         import unctools.operations  # noqa: F401
 
 
-def test_version_is_0_2_0():
+def test_version_is_wired_and_consistent():
+    # Version plumbing is correct WITHOUT pinning a literal version -- a bump
+    # (editing MAJOR/MINOR/PATCH in _version.py) never requires touching this
+    # test. We assert the constants drive a well-formed base and that every
+    # derived value agrees with it. This still catches a DESYNCED __version__
+    # (e.g. constants bumped but the autobump hook hasn't regenerated the
+    # string), which is the real failure mode worth guarding.
     import unctools
-    assert unctools.__version__ == "0.2.0"
+    from unctools import _version
+    assert isinstance(_version.MAJOR, int)
+    assert isinstance(_version.MINOR, int)
+    assert isinstance(_version.PATCH, int)
+    base = f"{_version.MAJOR}.{_version.MINOR}.{_version.PATCH}"
+    assert _version.get_base_version().startswith(base)
+    assert _version.PIP_VERSION.startswith(base)
+    assert unctools.__version__.startswith(base)

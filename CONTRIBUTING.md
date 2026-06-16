@@ -71,6 +71,22 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
    pip install pywin32
    ```
 
+#### Git Hooks (recommended)
+
+UNCtools uses shell-based git hooks (vendored via the `git-repokit-common` subtree at `scripts/repokit-common/`) for automatic version stamping and basic safety checks. They are POSIX shell scripts, so they avoid the Python-path import issues of interpreter-based hooks. Install them once after cloning:
+
+```bash
+bash scripts/repokit-common/install-hooks.sh
+```
+
+What they do:
+
+- **pre-commit** -- stamps build metadata into `unctools/_version.py` (`sync-versions.py --auto`), protects private content, and blocks accidentally-committed large files
+- **post-commit** -- updates the version hash after the commit lands
+- **pre-push** -- Python syntax check, runs the test suite, and flags leftover debug statements
+
+The hooks keep the auto-generated `__version__` string in sync, so you never edit it by hand -- bump a release by editing only the `MAJOR`/`MINOR`/`PATCH` constants in `unctools/_version.py`.
+
 #### Pull Request Process
 
 1. **Create a new branch** from `dev` (not `main`):
