@@ -25,7 +25,7 @@ PHASE = ""  # Per-MINOR feature set: "" (stable), "alpha", "beta", "rc1", etc.
 PROJECT_PHASE = ""  # "prealpha", "alpha", "beta", "stable", or ""
 
 # Auto-updated by git hooks - do not edit manually
-__version__ = "0.2.1_main_35-20260616-d782e3eb"
+__version__ = "0.2.1_main_36-20260617-5e95255b"
 __app_name__ = "unctools"
 
 

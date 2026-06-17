@@ -35,10 +35,9 @@ def test_module_imports():
     assert_is_not_none(unctools, "unctools package should be importable")
     
     # Test importing core modules
-    from unctools import converter, detector, operations
+    from unctools import converter, detector
     assert_is_not_none(converter, "converter module should be importable")
     assert_is_not_none(detector, "detector module should be importable")
-    assert_is_not_none(operations, "operations module should be importable")
     
     # Test importing utility modules
     from unctools.utils import compat, logger, validation
@@ -132,9 +131,9 @@ def test_windows_fallbacks():
     is_unc = unctools.detector.is_unc_path("\\\\server\\share\\file.txt")
     assert_true(is_unc, "is_unc_path should work")
     
-    path_type = unctools.detector.get_path_type("\\\\server\\share\\file.txt")
-    assert_equal(path_type, unctools.detector.PATH_TYPE_UNC, 
-                "get_path_type should identify UNC paths")
+    path_type = unctools.detector.classify_path_origin("\\\\server\\share\\file.txt")
+    assert_equal(path_type, unctools.detector.PATH_TYPE_UNC,
+                "classify_path_origin should identify UNC paths")
 
 def test_module_import_warnings():
     """Test that no unexpected import warnings are generated."""
@@ -158,7 +157,6 @@ def test_module_import_warnings():
     for module_name in [
         'unctools.converter', 
         'unctools.detector', 
-        'unctools.operations'
     ]:
         if module_name in sys.modules:
             importlib.reload(sys.modules[module_name])

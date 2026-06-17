@@ -26,7 +26,7 @@ from tests.test_framework import (
 import unctools
 from unctools.detector import (
     is_unc_path, is_network_drive, is_subst_drive, 
-    get_path_type, detect_path_issues, get_network_mappings,
+    classify_path_origin, detect_path_issues, get_network_mappings,
     get_subst_target, get_network_target, is_server_in_intranet_zone,
     PATH_TYPE_UNC, PATH_TYPE_NETWORK, PATH_TYPE_SUBST, 
     PATH_TYPE_LOCAL, PATH_TYPE_UNKNOWN, PATH_TYPE_REMOVABLE,
@@ -177,8 +177,8 @@ def test_get_network_target():
         assert_is_none(get_network_target("Q:"), 
                       "Non-existent drive should return None")
 
-def test_get_path_type():
-    """Test get_path_type function."""
+def test_classify_path_origin():
+    """Test classify_path_origin function."""
     # Mock the underlying functions
     def mock_is_unc_path(path):
         return str(path).startswith("\\\\") or str(path).startswith("//")
@@ -204,37 +204,37 @@ def test_get_path_type():
          mock.patch('unctools.detector.get_drive_type', side_effect=mock_get_drive_type):
         
         # Test with UNC path
-        assert_equal(get_path_type(TEST_UNC_PATH), PATH_TYPE_UNC, 
+        assert_equal(classify_path_origin(TEST_UNC_PATH), PATH_TYPE_UNC, 
                     "UNC path should be detected as UNC type")
         
         # Test with local path
-        assert_equal(get_path_type(TEST_LOCAL_PATH), PATH_TYPE_LOCAL, 
+        assert_equal(classify_path_origin(TEST_LOCAL_PATH), PATH_TYPE_LOCAL, 
                     "Local path should be detected as local type")
         
         # Test with network drive path
-        assert_equal(get_path_type(TEST_NETWORK_PATH), PATH_TYPE_NETWORK, 
+        assert_equal(classify_path_origin(TEST_NETWORK_PATH), PATH_TYPE_NETWORK, 
                     "Network drive path should be detected as network type")
         
         # Test with subst drive path
-        assert_equal(get_path_type(TEST_SUBST_PATH), PATH_TYPE_SUBST, 
+        assert_equal(classify_path_origin(TEST_SUBST_PATH), PATH_TYPE_SUBST, 
                     "Subst drive path should be detected as subst type")
         
         # Test with removable drive path
-        assert_equal(get_path_type("E:\\file.txt"), PATH_TYPE_REMOVABLE, 
+        assert_equal(classify_path_origin("E:\\file.txt"), PATH_TYPE_REMOVABLE, 
                     "Removable drive path should be detected as removable type")
         
         # Test with CD-ROM drive path
-        assert_equal(get_path_type("D:\\file.txt"), PATH_TYPE_CDROM, 
+        assert_equal(classify_path_origin("D:\\file.txt"), PATH_TYPE_CDROM, 
                     "CD-ROM drive path should be detected as cdrom type")
         
         # Test with RAM disk path
-        assert_equal(get_path_type("R:\\file.txt"), PATH_TYPE_RAMDISK, 
+        assert_equal(classify_path_origin("R:\\file.txt"), PATH_TYPE_RAMDISK, 
                     "RAM disk path should be detected as ramdisk type")
         
         # Test with invalid path
-        assert_equal(get_path_type(""), PATH_TYPE_UNKNOWN, 
+        assert_equal(classify_path_origin(""), PATH_TYPE_UNKNOWN, 
                     "Empty string should be detected as unknown type")
-        assert_equal(get_path_type(None), PATH_TYPE_UNKNOWN, 
+        assert_equal(classify_path_origin(None), PATH_TYPE_UNKNOWN, 
                     "None should be detected as unknown type")
 
 @pytest.mark.skipif(os.name != 'nt', reason="Windows-specific test - tests security zone functionality")
@@ -244,7 +244,7 @@ def test_detect_path_issues():
     def mock_is_unc_path(path):
         return str(path).startswith("\\\\") or str(path).startswith("//")
     
-    def mock_get_path_type(path):
+    def mock_classify_path_origin(path):
         if mock_is_unc_path(path):
             return PATH_TYPE_UNC
         elif str(path).startswith("Z:"):
@@ -268,7 +268,7 @@ def test_detect_path_issues():
         return None
     
     with mock.patch('unctools.detector.is_unc_path', side_effect=mock_is_unc_path), \
-         mock.patch('unctools.detector.get_path_type', side_effect=mock_get_path_type), \
+         mock.patch('unctools.detector.classify_path_origin', side_effect=mock_classify_path_origin), \
          mock.patch('unctools.detector.is_server_in_intranet_zone', side_effect=mock_is_server_in_intranet_zone), \
          mock.patch('unctools.detector.get_network_target', side_effect=mock_get_network_target), \
          mock.patch('unctools.detector.get_subst_target', side_effect=mock_get_subst_target), \
@@ -373,7 +373,7 @@ def run_tests():
     suite.add_test(test_is_subst_drive)
     suite.add_test(test_get_subst_target)
     suite.add_test(test_get_network_target)
-    suite.add_test(test_get_path_type)
+    suite.add_test(test_classify_path_origin)
     suite.add_test(test_detect_path_issues)
     suite.add_test(test_is_server_in_intranet_zone)
     suite.add_test(test_get_network_mappings)

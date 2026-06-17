@@ -44,6 +44,8 @@ TEST_LOCAL_PATH = "C:\\Users\\username\\Documents\\file.txt"
 
 class TestEnvironment:
     """Manages a temporary test environment with files."""
+
+    __test__ = False  # fixture helper (see conftest `env`), not a pytest test class
     
     def __init__(self):
         """Initialize the test environment."""

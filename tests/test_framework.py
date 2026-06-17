@@ -16,6 +16,8 @@ logging.basicConfig(level=logging.INFO,
 
 class TestResult:
     """Container for test results."""
+
+    __test__ = False  # custom-runner container, not a pytest test class
     
     def __init__(self):
         self.passed = []
@@ -59,6 +61,8 @@ class TestResult:
 
 class TestSuite:
     """A suite of tests."""
+
+    __test__ = False  # custom standalone runner, not a pytest test class
     
     def __init__(self, name: str):
         self.name = name
