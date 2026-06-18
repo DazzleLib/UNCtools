@@ -18,14 +18,14 @@ Version levels:
 # Version components - edit these for version bumps
 MAJOR = 0
 MINOR = 2
-PATCH = 1
+PATCH = 2
 PHASE = ""  # Per-MINOR feature set: "" (stable), "alpha", "beta", "rc1", etc.
 
 # Project-level phase (independent of version phase)
 PROJECT_PHASE = ""  # "prealpha", "alpha", "beta", "stable", or ""
 
 # Auto-updated by git hooks - do not edit manually
-__version__ = "0.2.1_main_36-20260617-5e95255b"
+__version__ = "0.2.2_main_37-20260617-fe0cf547"
 __app_name__ = "unctools"
 
 

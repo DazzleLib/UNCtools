@@ -12,6 +12,11 @@ mutates or transfers content.
 
 ## [Unreleased]
 
+## [0.2.2] -- 2026-06-17
+
+### Added
+- **`UNCConverter` WNetGetUniversalName enrichment**: `refresh_mappings()` now runs an additive pass (`_get_mappings_with_wnetuniversalname`) after the SMB net-use scan, using `win32wnet.WNetGetUniversalName` to resolve drives the LanmanWorkstation net-use table (`NetUseEnum` / `net use`) can miss -- those served by non-SMB / third-party network providers and some DFS/reconnect cases. It only adds drives not already mapped (authoritative net-use entries are never overwritten) and normalizes results to the module's conventions. Folds in the provider-chain coverage previously held by `dazzle-filekit.get_drive_mappings` (DazzleLib stack V9), so that copy can be retired without losing coverage.
+
 ## [0.2.1] -- 2026-06-16
 
 ### Changed
@@ -65,6 +70,6 @@ pointer dist makes the library discoverable under the org's uniform naming.
   machine-checked; changes follow the deprecation policy, never silent.
 - This CHANGELOG.
 
-[Unreleased]: https://github.com/DazzleLib/UNCtools/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/DazzleLib/UNCtools/compare/v0.2.2...HEAD
 [0.2.1]: https://github.com/DazzleLib/UNCtools/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/DazzleLib/UNCtools/releases/tag/v0.2.0

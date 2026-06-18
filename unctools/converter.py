@@ -20,11 +20,13 @@ IS_WINDOWS = os.name == 'nt'
 
 # Global flag for win32net availability
 HAVE_WIN32NET = False
+# Global flag for win32wnet availability (WNet Multiple Provider Router)
+HAVE_WIN32WNET = False
 
 # Only try to import Windows-specific modules if we're on Windows
 if IS_WINDOWS:
     from unctools.utils.compat import is_module_available
-    
+
     # Check if win32net is available without importing it
     if is_module_available('win32net'):
         try:
@@ -33,6 +35,16 @@ if IS_WINDOWS:
         except ImportError:
             # This should rarely happen since we checked for availability
             logger.debug("win32net module found but failed to import.")
+
+    # win32wnet powers the WNetGetUniversalName provider-chain enrichment
+    # (catches drives served by non-SMB / third-party network providers that
+    # the LanmanWorkstation net-use table -- NetUseEnum -- can miss).
+    if is_module_available('win32wnet'):
+        try:
+            import win32wnet
+            HAVE_WIN32WNET = True
+        except ImportError:
+            logger.debug("win32wnet module found but failed to import.")
 
 # Define constants
 UNC_PATTERN = re.compile(r'^\\\\([^\\]+)\\([^\\]+)(?:\\(.*))?$')
@@ -88,7 +100,12 @@ class UNCConverter:
         else:
             # Use subprocess method
             self._get_mappings_with_subprocess()
-        
+
+        # Additive enrichment pass: pick up drives the net-use table missed
+        # (non-SMB / third-party providers, some DFS/reconnect cases) via the
+        # WNet provider chain. Never overwrites an authoritative net-use entry.
+        self._get_mappings_with_wnetuniversalname()
+
         # Check if mappings changed
         if self._mapping != old_mapping:
             logger.debug(f"Network mappings changed: {len(self._mapping)} mappings")
@@ -164,7 +181,53 @@ class UNCConverter:
             logger.debug(f"Retrieved {len(self._mapping)} network mappings using 'net use'")
         except Exception as e:
             logger.warning(f"Failed to get network mappings using 'net use': {e}")
-    
+
+    def _get_mappings_with_wnetuniversalname(self) -> None:
+        """Enrich the mappings via ``win32wnet.WNetGetUniversalName`` (the WNet
+        Multiple Provider Router).
+
+        ``NetUseEnum`` / ``net use`` reflect the LanmanWorkstation (SMB) net-use
+        table and can miss drives served by non-SMB or third-party network
+        providers, and some DFS/reconnect cases. ``WNetGetUniversalName`` walks
+        the MPR provider chain and resolves the universal (UNC) name for such
+        drives. This runs as an **additive** pass after the primary source: a
+        drive already mapped by ``NetUseEnum``/``net use`` is left untouched
+        (those entries are authoritative); only drives not yet known are added.
+
+        Provenance: ports the ``win32wnet.WNetGetUniversalName`` per-drive A-Z
+        scan from ``dazzle_filekit.utils.compat.get_drive_mappings`` into the
+        path-identity layer that owns drive<->UNC knowledge (STACK-MAP V9).
+        Populates ``_mapping`` / ``_reverse_mapping`` in the module's normalized
+        conventions (UNC lowercased + no trailing slash; drive uppercased).
+        """
+        if not self._is_windows or not HAVE_WIN32WNET:
+            return
+
+        for letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ':
+            drive_no_slash = f"{letter}:"
+
+            # Don't overwrite an authoritative net-use entry.
+            if drive_no_slash in self._reverse_mapping:
+                continue
+
+            try:
+                # Level 1 (UNIVERSAL_NAME_INFO_LEVEL) returns the UNC string.
+                unc = win32wnet.WNetGetUniversalName(drive_no_slash, 1)
+            except Exception:
+                # Not a redirected/mapped drive, or no MPR provider claims it.
+                continue
+
+            if not unc:
+                continue
+
+            unc_clean = str(unc).rstrip('\\').lower()
+            if not unc_clean.startswith('\\\\'):
+                continue
+
+            self._mapping.setdefault(unc_clean, drive_no_slash + '\\')
+            self._reverse_mapping[drive_no_slash] = unc_clean
+            logger.debug(f"WNet enrichment: {drive_no_slash} -> {unc_clean}")
+
     def convert_to_local(self, path: Union[str, Path]) -> Path:
         """
         Convert a UNC path to its corresponding local drive path if possible.
