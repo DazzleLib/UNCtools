@@ -22,6 +22,9 @@ mutates or transfers content.
 ### Changed
 - `is_subst_drive` / `get_subst_target` now route through `get_subst_mappings()` -- one subprocess per enumeration instead of up to two per call, and cache-consistent (stale positives cleared on refresh).
 
+### Deprecation schedule note
+- The 0.2.0 notes slated the `get_path_type` shim and the `operations` re-export facade for **removal in 0.3.0**. They are consciously RETAINED through 0.3.x (this release is the portable-paths feature train; bundling breaking removals into it would couple unrelated blast radii) and are now slated for **0.4.0**.
+
 ## [0.2.2] -- 2026-06-17
 
 ### Added
@@ -81,5 +84,7 @@ pointer dist makes the library discoverable under the org's uniform naming.
 - This CHANGELOG.
 
 [Unreleased]: https://github.com/DazzleLib/UNCtools/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/DazzleLib/UNCtools/compare/v0.2.2...v0.3.0
+[0.2.2]: https://github.com/DazzleLib/UNCtools/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/DazzleLib/UNCtools/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/DazzleLib/UNCtools/releases/tag/v0.2.0
