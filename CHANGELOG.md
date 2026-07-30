@@ -12,6 +12,16 @@ mutates or transfers content.
 
 ## [Unreleased]
 
+## [0.3.0] -- 2026-07-30
+
+### Added
+- **`path_variants(path) -> [(kind, value)]`** -- the kinded, provenance-preserving variant primitive: enumerates a path's alternative names as `('unc', ...)` (drive->UNC), `('drive', ...)` (UNC->mapped drive), `('subst', ...)` (alias expanded to its underlying real path). **Kind is the mechanism-of-derivation, not the form-of-value** -- a subst expansion's value is a plain local path (`classify_path_origin(value) == 'local'` is correct by design); provenance is unrecoverable from the string form, which is why the primitive carries it. Derivations only: the input path is NOT included (unlike `dazzle_lib.PathVariantResolver.variants()`, which includes it -- documented cross-reference in the docstring). Never raises; `[]` on non-Windows. Built for the DazzleLib portable-paths train (dazzlelink#24): dazzle-linklib's locator population and live re-resolution consume it.
+- **`get_subst_mappings()`** -- one-shot enumeration of ALL subst drives (single `subst` spawn), refreshing the detection cache for every drive letter consistently, so a removed subst mapping stops reporting stale `is_subst_drive(...) == True`.
+- Top-level exports: `get_subst_target`, `get_network_target`, `get_subst_mappings`, `get_mappings`, `refresh_mappings`, `path_variants` (previously submodule-only or new).
+
+### Changed
+- `is_subst_drive` / `get_subst_target` now route through `get_subst_mappings()` -- one subprocess per enumeration instead of up to two per call, and cache-consistent (stale positives cleared on refresh).
+
 ## [0.2.2] -- 2026-06-17
 
 ### Added
@@ -70,6 +80,6 @@ pointer dist makes the library discoverable under the org's uniform naming.
   machine-checked; changes follow the deprecation policy, never silent.
 - This CHANGELOG.
 
-[Unreleased]: https://github.com/DazzleLib/UNCtools/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/DazzleLib/UNCtools/compare/v0.3.0...HEAD
 [0.2.1]: https://github.com/DazzleLib/UNCtools/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/DazzleLib/UNCtools/releases/tag/v0.2.0

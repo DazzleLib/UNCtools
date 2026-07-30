@@ -215,32 +215,48 @@ def is_subst_drive(drive: Union[str, Path, None]) -> bool:
     if cache_key in _path_type_cache:
         return _path_type_cache[cache_key]
     
-    # Check if the drive is a subst drive
+    # Check if the drive is a subst drive (one-shot enumeration, cache-consistent)
+    mappings = get_subst_mappings()
+    return _path_type_cache.get(cache_key, drive_letter.upper() in mappings)
+
+def get_subst_mappings() -> Dict[str, str]:
+    """
+    Enumerate ALL substituted (subst) drives in one shot.
+
+    Runs the ``subst`` command once and parses every mapping, refreshing the
+    detection cache for all 26 drive letters consistently (so a removed subst
+    stops reporting True instead of serving a stale cached hit).
+
+    Returns:
+        Dict mapping drive letters (``"Q:"``, uppercase) to their target paths.
+        Empty on non-Windows or on any enumeration failure.
+    """
+    if not IS_WINDOWS:
+        return {}
+
+    mappings: Dict[str, str] = {}
     try:
-        # Try to get subst drives using the 'subst' command
         output = subprocess.check_output(['subst'], text=True, stderr=subprocess.STDOUT)
-        
-        # Look for the drive letter in the output
-        drive_pattern = re.escape(drive_letter.upper().rstrip('\\')) + r'\\: => (.*)'
-        match = re.search(drive_pattern, output)
-        
-        result = match is not None
-        
-        # Cache the result
-        _path_type_cache[cache_key] = result
-        
-        return result
+        for line in output.splitlines():
+            m = re.match(r'^([A-Za-z]):\\: => (.*)$', line.strip())
+            if m:
+                mappings[f"{m.group(1).upper()}:"] = m.group(2)
     except Exception as e:
-        logger.warning(f"Failed to check if {drive_letter} is a subst drive: {e}")
-        return False
+        logger.warning(f"Failed to enumerate subst drives: {e}")
+        return {}
+
+    # Refresh the cache for every letter, including clearing stale positives.
+    for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+        _path_type_cache[f"subst_{letter}:"] = f"{letter}:" in mappings
+    return mappings
 
 def get_subst_target(drive: Union[str, Path]) -> Optional[str]:
     """
     Get the target path of a substituted (subst) drive.
-    
+
     Args:
         drive: The drive letter or path to check.
-        
+
     Returns:
         The target path of the subst drive, or None if the drive is not a subst drive.
     """
@@ -251,30 +267,13 @@ def get_subst_target(drive: Union[str, Path]) -> Optional[str]:
         drive_letter = match.group(1)
     else:
         drive_letter = drive_str
-    
+
     # Only applicable to Windows
     if not IS_WINDOWS:
         return None
-    
-    # Check if it's a subst drive first
-    if not is_subst_drive(drive_letter):
-        return None
-    
-    try:
-        # Get subst drives using the 'subst' command
-        output = subprocess.check_output(['subst'], text=True, stderr=subprocess.STDOUT)
-        
-        # Look for the drive letter in the output
-        drive_pattern = re.escape(drive_letter.upper().rstrip('\\')) + r'\\: => (.*)'
-        match = re.search(drive_pattern, output)
-        
-        if match:
-            return match.group(1)
-        
-        return None
-    except Exception as e:
-        logger.warning(f"Failed to get subst target for {drive_letter}: {e}")
-        return None
+
+    # One-shot enumeration (single subprocess, shared cache refresh)
+    return get_subst_mappings().get(drive_letter.upper())
 
 def get_network_target(drive: Union[str, Path, None]) -> Optional[str]:
     """
@@ -678,3 +677,76 @@ def find_accessible_path(path: Union[str, Path]) -> Optional[Path]:
 
     # If we got here, no accessible variant was found
     return None
+
+def path_variants(path: Union[str, Path]) -> List[Tuple[str, str]]:
+    r"""
+    Enumerate kinded, provenance-preserving alternative names for a path.
+
+    Each returned pair is ``(kind, value)`` where **kind is the
+    mechanism-of-derivation, not the form-of-value**: a ``'subst'`` variant's
+    value is a plain local path (``classify_path_origin(value)`` legitimately
+    returns ``'local'``) -- the kind records HOW the value was derived, which
+    is unrecoverable from the string form alone.
+
+    Kinds emitted:
+      - ``'unc'``   -- drive-letter path converted to its UNC form (net use map)
+      - ``'drive'`` -- UNC path converted to a currently-mapped drive letter
+      - ``'subst'`` -- subst alias expanded to its underlying real path
+
+    Contract notes:
+      - **Derivations only** -- unlike ``dazzle_lib.PathVariantResolver.variants()``,
+        the input path is NOT included; prepend it yourself if adapting this to
+        that protocol.
+      - Never raises; each mechanism is best-effort (failures are debug-logged).
+      - Order: unc, drive, subst -- deduplicated, input-equal values dropped.
+      - Non-Windows: returns ``[]`` (no mapping mechanisms exist).
+
+    Args:
+        path: The path to enumerate variants for.
+
+    Returns:
+        List of ``(kind, value)`` tuples; possibly empty.
+    """
+    if not IS_WINDOWS:
+        return []
+
+    from .converter import convert_to_local, convert_to_unc
+
+    original = str(path)
+    # The converters return the input unchanged (as a Path) when no mapping
+    # applies; compare against the same normalization so separator churn is
+    # not mistaken for a real variant.
+    baseline = os.path.normcase(str(Path(original)))
+    seen = {baseline}
+    variants: List[Tuple[str, str]] = []
+
+    def _add(kind: str, value: str) -> None:
+        key = os.path.normcase(value)
+        if key not in seen:
+            seen.add(key)
+            variants.append((kind, value))
+
+    try:
+        unc = str(convert_to_unc(original))
+        if os.path.normcase(unc) != baseline:
+            _add('unc', unc)
+    except Exception as e:
+        logger.debug(f"path_variants: drive->unc failed for {original}: {e}")
+
+    try:
+        local = str(convert_to_local(original))
+        if os.path.normcase(local) != baseline:
+            _add('drive', local)
+    except Exception as e:
+        logger.debug(f"path_variants: unc->drive failed for {original}: {e}")
+
+    try:
+        m = re.match(r'^([A-Za-z]:)', original)
+        if m:
+            target = get_subst_mappings().get(m.group(1).upper())
+            if target:
+                _add('subst', target + original[2:])
+    except Exception as e:
+        logger.debug(f"path_variants: subst expansion failed for {original}: {e}")
+
+    return variants

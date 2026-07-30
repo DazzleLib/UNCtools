@@ -51,12 +51,19 @@ logger = logging.getLogger(__name__)
 from .converter import (
     convert_to_local, convert_to_unc,
     batch_convert, get_unc_path_elements, build_unc_path,
+    get_mappings, refresh_mappings,
 )
 from .detector import (
     is_unc_path, is_network_drive, is_subst_drive,
     classify_path_origin, get_path_type,  # get_path_type = deprecated shim (A4)
     get_network_mappings, detect_path_issues,
     file_exists, is_path_accessible, find_accessible_path,
+    # 0.3.0: subst/network target probes + the kinded variant primitive.
+    # path_variants returns (kind, value) DERIVATIONS -- kind is the
+    # mechanism-of-derivation, the input is NOT included (see its docstring
+    # vs dazzle_lib.PathVariantResolver.variants, which includes the input).
+    get_subst_target, get_network_target, get_subst_mappings,
+    path_variants,
 )
 
 # Determine if we're running on Windows
